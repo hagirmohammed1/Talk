@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>محول نص إلى صوت مجاني وطبيعي</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      direction: rtl;
+      text-align: center;
+      background: #f5f7fa;
+    }
+    textarea {
+      width: 100%;
+      max-width: 700px;
+      height: 120px;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+    }
+    select, input[type="range"], button {
+      margin: 5px;
+      font-size: 16px;
+    }
+    .controls {
+      margin: 10px 0;
+    }
+    #status {
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>محول نص إلى صوت — مجاني بالكامل</h2>
+  <textarea id="textInput" placeholder="اكتب نصك هنا..."></textarea>
+
+  <div class="controls">
+    <label for="voiceSelect">الصوت:</label>
+    <select id="voiceSelect"></select>
+  </div>
+
+  <div class="controls">
+    <label>السرعة:</label>
+    <input id="rate" type="range" min="0.5" max="2" step="0.1" value="1" />
+    <span id="rateVal">1</span>
+    &nbsp;&nbsp;
+    <label>النبرة:</label>
+    <input id="pitch" type="range" min="0" max="2" step="0.1" value="1" />
+    <span id="pitchVal">1</span>
+  </div>
+
+  <div class="controls">
+    <button id="speakBtn">🔊 تشغيل</button>
+    <button id="stopBtn">⏹️ إيقاف</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const synth       = window.speechSynthesis;
+    const textInput   = document.getElementById('textInput');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rate        = document.getElementById('rate');
+    const pitch       = document.getElementById('pitch');
+    const rateVal     = document.getElementById('rateVal');
+    const pitchVal    = document.getElementById('pitchVal');
+    const speakBtn    = document.getElementById('speakBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+    const statusDiv   = document.getElementById('status');
+    let voices = [];
+
+    function loadVoices() {
+      voices = synth.getVoices().filter(v => /ar|en/.test(v.lang)); // نعرض فقط العربية والإنجليزية
+      voiceSelect.innerHTML = '';
+      voices.forEach((v, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${v.name} — ${v.lang}`;
+        if (v.default) opt.textContent += ' (افتراضي)';
+        voiceSelect.appendChild(opt);
+      });
+    }
+
+    synth.addEventListener('voiceschanged', loadVoices);
+    loadVoices();
+
+    rate.addEventListener('input', () => rateVal.textContent = rate.value);
+    pitch.addEventListener('input', () => pitchVal.textContent = pitch.value);
+
+    speakBtn.addEventListener('click', () => {
+      if (synth.speaking) return;
+      const text = textInput.value.trim();
+      if (!text) return alert('من فضلك اكتب نصاً أولاً.');
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.voice = voices[voiceSelect.value];
+      utter.rate  = parseFloat(rate.value);
+      utter.pitch = parseFloat(pitch.value);
+
+      utter.onstart = () => statusDiv.textContent = '🔊 جاري التشغيل...';
+      utter.onend   = () => statusDiv.textContent = '✅ انتهى التشغيل.';
+      utter.onerror = e => statusDiv.textContent = '❌ حدث خطأ في التشغيل.';
+
+      synth.speak(utter);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (synth.speaking) {
+        synth.cancel();
+        statusDiv.textContent = '⏹️ تم الإيقاف.';
+      }
+    });
+  </script>
+
+</body>
+</html>
